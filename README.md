@@ -17,3 +17,9 @@ A simple command-line app that sends a prompt to GPT-4o and logs the response wi
 Install dependencies:
 ```bash
 pip install -r requirements.txt
+
+## ✅ Current Progress
+
+- [x] Day 1: Project scaffolding + setup
+- [x] Day 2: GPT-4o prompt + response pipeline
+- [x] Day 3: SQLite logging (logs prompt, response, timestamp)
