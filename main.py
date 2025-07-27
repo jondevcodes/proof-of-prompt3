@@ -1,13 +1,23 @@
 # main.py
+import os
+from dotenv import load_dotenv
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
+
+# Load environment variables
+load_dotenv()
+api_key = os.getenv("OPENAI_API_KEY")
+
+# Import PromptSession after loading env vars
 from core.prompt_session import PromptSession
+session = PromptSession(api_key=api_key)
 
+# Initialize FastAPI app
 app = FastAPI()
-session = PromptSession()
 
+# Define Pydantic model for request body
 class PromptRequest(BaseModel):
     prompt: str
 

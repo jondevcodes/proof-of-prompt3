@@ -1,17 +1,16 @@
-# core/prompt_session.py
-
 import os
 import sqlite3
 import hashlib
-from dotenv import load_dotenv
 from datetime import datetime
-from openai import OpenAI  # ✅ New import for the modern SDK
-
-load_dotenv()
-client = OpenAI()  # ✅ New way to access OpenAI, reads key from .env
+from openai import OpenAI  # ✅ Modern SDK
 
 class PromptSession:
-    def __init__(self, db_path="db/logs.db"):
+    """
+    Manages GPT interactions and logs prompt-response pairs into a local SQLite database.
+    """
+
+    def __init__(self, api_key, db_path="db/logs.db"):
+        self.client = OpenAI(api_key=api_key)
         self.db_path = db_path
         self._init_db()
 
@@ -31,21 +30,16 @@ class PromptSession:
         conn.close()
 
     def ask_gpt(self, prompt):
-        # ✅ Get GPT response
-        response = client.chat.completions.create(
+        response = self.client.chat.completions.create(
             model="gpt-4",
             messages=[{"role": "user", "content": prompt}]
         )
         result = response.choices[0].message.content
 
-        # ✅ Create hash of prompt + result
         combined = prompt + result
         hash_hex = hashlib.sha256(combined.encode('utf-8')).hexdigest()
-
-        # ✅ Timestamp
         timestamp = datetime.utcnow().isoformat()
 
-        # ✅ Log to DB
         self._log_to_db(prompt, result, hash_hex, timestamp)
 
         return {
@@ -82,3 +76,4 @@ class PromptSession:
             }
         else:
             return None
+
