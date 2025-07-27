@@ -1,6 +1,13 @@
+
+---
+
+````markdown
 # 🧠 Proof-of-Prompt
 
-A simple command-line and web-based Python app that sends prompts to GPT-4 and logs responses with timestamps into a local SQLite database. Built for fast iteration, prompt engineering, and tracking your conversations with AI.
+> **Prove authorship of AI-generated content** with cryptographic timestamps.  
+> The foundation for on-chain prompt verification and AI content rights management.
+
+[![Proof-of-Prompt Demo](https://img.shields.io/badge/DEMO-LIVE-green?style=for-the-badge)](https://youtube.com/shorts/your-demo-link)
 
 ---
 
@@ -9,79 +16,153 @@ A simple command-line and web-based Python app that sends prompts to GPT-4 and l
 - 💬 CLI-based + Web API interaction with GPT-4  
 - 🔐 Secure API key loading via `.env`  
 - 🧠 Logs prompt, response, and timestamp to SQLite (`logs.db`)  
-- ⚡ FastAPI server for RESTful access to GPT  
-- 🧪 JSON testing interface at `/docs`  
-- 🖥️ Production-ready project structure  
+- ✅ **Verification Endpoint** – Instantly confirm prompt authorship  
+- 🔐 **SHA-256 Hashing** – Cryptographic proof of prompt integrity  
+- 🔗 **Web3-Ready Architecture** – Built for blockchain integration  
+- ⚡ FastAPI server for RESTful GPT access  
+- 🧪 Auto-generated docs at `/docs`
 
 ---
 
 ## 📦 Tech Stack
 
 - Python 3.10+  
-- OpenAI API (`openai`)  
+- `openai`  
+- `fastapi` + `uvicorn`  
+- `sqlite3`  
+- `hashlib` – cryptographic hashing  
 - `python-dotenv`  
-- SQLite3  
-- FastAPI + Uvicorn  
+- `pydantic` – data validation  
+- `alembic` *(recommended for future migrations)*
 
 ---
 
-## ✅ Project Progress
+## ✅ Development Progress
 
-- [x] Day 1: Project scaffolding + environment setup  
-- [x] Day 2: GPT prompt → response pipeline  
-- [x] Day 3: SQLite logging  
-- [x] Day 4: FastAPI backend  
-- [x] Day 5–7: Tested 3 prompts, committed to GitHub  
-- [ ] Final polish + Web3 phase  
+- ✅ **Day 1:** Project setup + `.env` config  
+- ✅ **Day 2:** Prompt/response pipeline  
+- ✅ **Day 3:** SQLite logging  
+- ✅ **Day 4:** FastAPI backend  
+- ✅ **Day 5:** Cryptographic hashing implementation  
+- ✅ **Day 6:** Verification endpoint + Swagger UI  
+- ✅ **Day 7:** GitHub SSH + repo hardening  
+- 🔜 **Phase 2:** Smart contract integration (on-chain proof)
 
 ---
 
 ## 🧪 How to Run Locally
 
 ### 1. Clone the Repo
-
 ```bash
-git clone https://github.com/your-username/proof-of-prompt.git
-cd proof-of-prompt
+git clone git@github.com:jondevcodes/proof-of-prompt-restored.git
+cd proof-of-prompt-restored
 ````
 
-### 2. Install Dependencies
+### 2. Optional: Create Virtual Environment
+
+```bash
+python3 -m venv venv
+source venv/bin/activate
+```
+
+### 3. Install Dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 3. Add API Key to `.env`
+### 4. Create `.env` File
 
-```
+```env
 OPENAI_API_KEY=your-openai-key-here
 ```
 
-### 4. Start API Server
+> ⚠️ **Never commit this file!** It’s ignored via `.gitignore`.
+
+### 5. Start API Server
 
 ```bash
 uvicorn main:app --reload
 ```
 
-Then visit: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs) to test endpoints.
+📡 Visit: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
 
 ---
 
-## 🛠️ Future Ideas
+## 🔍 Verification Demo
 
-* Export logs to `.csv` or JSON
-* Turn prompts into NFTs (Proof-of-Ownership)
-* Add frontend (Next.js or React)
-* Add Auth (API key or wallet sign-in)
-* Deploy to Render / Vercel
+**Verify a prompt hash:**
+
+```bash
+curl -X POST http://127.0.0.1:8000/verify \
+  -H "Content-Type: application/json" \
+  -d '{"hash": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"}'
+```
 
 ---
 
-## 🔗 Inspired by
+## 🛠️ Future Roadmap
 
-* DeepSeek’s “ChainGPT Tracker” strategy
-* Tech With Tim's Dev Roadmap
-* Your commitment to shipping daily progress 🚀
+### 🟢 Short Term (1 week)
+
+* Smart contract prototype (Solidity)
+* Wallet authentication
+
+### 🟡 Mid Term (1 month)
+
+* IPFS or Arweave storage
+* Polygon chain deployment
+* NFT “proof-of-prompt” badge generator
+
+---
+
+## 👥 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+
+   ```bash
+   git checkout -b feature/amazing-feature
+   ```
+3. Commit your changes
+
+   ```bash
+   git commit -m "Add amazing feature"
+   ```
+4. Push and open a PR
+
+   ```bash
+   git push origin feature/amazing-feature
+   ```
+
+---
+
+## 🧠 Architecture
+
+```mermaid
+graph TD
+    A[User] --> B[CLI or Web UI]
+    B --> C[FastAPI Server]
+    C --> D[GPT-4 API]
+    C --> E[SQLite DB]
+    E --> F[SHA-256 Hasher]
+    F --> G[Verification Endpoint]
+    G --> H[Blockchain or IPFS (Planned)]
+```
+
+---
+
+## 🔗 Inspired By
+
+* **DeepSeek’s ChainGPT Tracker strategy**
+* **Tech With Tim’s Developer Roadmap**
+* **Your daily commitment to shipping progress** 🚀
+
+---
+
+## 📜 License
+
+MIT – Free to use, build on, and fork. Attribution appreciated.
 
 ```
 
