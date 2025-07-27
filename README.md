@@ -54,7 +54,7 @@ pip install -r requirements.txt
 ### 3. Add API Key to `.env`
 
 ```
-***REMOVED***=your-openai-key-here
+OPENAI_API_KEY=your-openai-key-here
 ```
 
 ### 4. Start API Server

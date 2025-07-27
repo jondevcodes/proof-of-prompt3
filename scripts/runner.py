@@ -6,7 +6,7 @@ from openai import OpenAI
 
 # Load your OpenAI API key from .env
 load_dotenv()
-client = OpenAI(api_key=os.getenv("***REMOVED***"))
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 LOG_FILE = "logs/logs.json"
 
