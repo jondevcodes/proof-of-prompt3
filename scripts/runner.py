@@ -1,7 +1,7 @@
 import os
 import json
 from dotenv import load_dotenv
-from datetime import datetime
+from datetime import datetime, timezone  # ✅ place it here at the top
 from openai import OpenAI
 
 # Load your OpenAI API key from .env
@@ -13,7 +13,7 @@ LOG_FILE = "logs/logs.json"
 def log_prompt_response(prompt, response):
     os.makedirs("logs", exist_ok=True)
     log_data = {
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": datetime.now(timezone.utc).isoformat(),  # ✅ proper timestamp
         "prompt": prompt,
         "response": response
     }
@@ -42,4 +42,3 @@ def run_prompt(prompt):
 if __name__ == "__main__":
     user_input = input("Enter your prompt:\n> ")
     run_prompt(user_input)
-

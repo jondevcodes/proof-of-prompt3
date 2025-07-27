@@ -1,10 +1,27 @@
-from prompt_handler import get_response
-from db_logger import init_db, log_to_db
+# main.py
 
-init_db()
+from fastapi import FastAPI, HTTPException
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel
+from core.prompt_session import PromptSession
 
-prompt = input("Enter your AI prompt: ")
-answer = get_response(prompt)
-log_to_db(prompt, answer)
+app = FastAPI()
+session = PromptSession()
 
-print("GPT-4 says:", answer)
+class PromptRequest(BaseModel):
+    prompt: str
+
+@app.get("/")
+def read_root():
+    return JSONResponse(content={"message": "ChainGPT Tracker is live 🧠"})
+
+@app.post("/prompt")
+def get_gpt_response(request: PromptRequest):
+    try:
+        response = session.ask_gpt(request.prompt)
+        return {
+            "prompt": request.prompt,
+            "response": response
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
