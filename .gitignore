@@ -1,7 +1,13 @@
+# Secrets and environments
 .env
-logs/
+venv/
+
+# Python cache and compiled files
 __pycache__/
 *.pyc
+
+# OS-specific files
 .DS_Store
-*.db
-venv/
+
+# SQLite logs
+db/logs.db
