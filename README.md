@@ -159,10 +159,16 @@ docker-compose up
 
 ---
 
-## 📜 License
+## 🛡️ License
 
-MIT License — Free for ethical use  
-**Commercial License** available on request
+This project is released under the MIT License for **educational and ethical use only**.
+
+**Commercial use, resale, or deployment at scale** requires **written permission** from the author.
+
+Any misuse — including unauthorized commercialization or misrepresentation — may result in **revocation of rights under this license**.
+
+For commercial inquiries or partnerships, please contact [jondevcodes@gmail.com].
+
 
 ---
 
