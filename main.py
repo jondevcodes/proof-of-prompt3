@@ -1,55 +1,84 @@
-# main.py
-import os
-from dotenv import load_dotenv
-
-from fastapi import FastAPI, HTTPException, Query
-from fastapi.responses import JSONResponse
+from db_logger import init_db
+init_db()
+from fastapi import FastAPI, Request
 from pydantic import BaseModel
+from prompt_handler import ask_gpt
+from db_logger import log_to_db
+import hashlib
+import sqlite3
+from fastapi.middleware.cors import CORSMiddleware
 
-# Load environment variables
-load_dotenv()
-api_key = os.getenv("OPENAI_API_KEY")
-
-# Import PromptSession after loading env vars
-from core.prompt_session import PromptSession
-session = PromptSession(api_key=api_key)
-
-# Initialize FastAPI app
 app = FastAPI()
 
-# Define Pydantic model for request body
+# Optional: Enable CORS for frontend usage
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # For dev; restrict in prod
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Pydantic schema
 class PromptRequest(BaseModel):
     prompt: str
 
-@app.get("/")
-def read_root():
-    return JSONResponse(content={"message": "ChainGPT Tracker is live 🧠"})
+class VerifyRequest(BaseModel):
+    hash: str
 
 @app.post("/prompt")
-def get_gpt_response(request: PromptRequest):
-    try:
-        result = session.ask_gpt(request.prompt)
-        return {
-            "prompt": request.prompt,
-            "response": result["response"],
-            "hash": result["hash"],
-            "timestamp": result["timestamp"]
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+async def generate_response(request: PromptRequest):
+    prompt = request.prompt
+    response = ask_gpt(prompt)
+    
+    # Generate SHA256 hash
+    combined = f"{prompt}{response}".encode('utf-8')
+    hash_value = hashlib.sha256(combined).hexdigest()
 
-@app.get("/verify")
-def verify_hash(hash: str = Query(..., description="SHA-256 hash to verify")):
-    try:
-        result = session.verify_hash(hash)
-        if result:
-            return {
-                "match": True,
-                "prompt": result["prompt"],
-                "response": result["response"],
-                "timestamp": result["timestamp"]
-            }
-        else:
-            return {"match": False, "message": "Hash not found in database."}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    # Log to SQLite
+    log_to_db(prompt, response, hash_value)
+
+    return {
+        "prompt": prompt,
+        "response": response,
+        "hash": hash_value
+    }
+
+@app.post("/verify")
+async def verify_hash(request: VerifyRequest):
+    hash_to_check = request.hash
+
+    conn = sqlite3.connect("db/logs.db")
+    cursor = conn.cursor()
+    cursor.execute("SELECT prompt, response, timestamp FROM prompts WHERE hash=?", (hash_to_check,))
+    result = cursor.fetchone()
+    conn.close()
+
+    if result:
+        return {
+            "match": True,
+            "prompt": result[0],
+            "response": result[1],
+            "timestamp": result[2]
+        }
+    else:
+        return { "match": False }
+
+@app.get("/history")
+async def get_history():
+    conn = sqlite3.connect("db/logs.db")
+    cursor = conn.cursor()
+    cursor.execute("SELECT prompt, response, hash, timestamp FROM prompts ORDER BY timestamp DESC")
+    rows = cursor.fetchall()
+    conn.close()
+
+    return {
+        "logs": [
+            {
+                "prompt": row[0],
+                "response": row[1],
+                "hash": row[2],
+                "timestamp": row[3]
+            } for row in rows
+        ]
+    }
