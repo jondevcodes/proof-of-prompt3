@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import axios from 'axios';
-import { ethers } from 'ethers';
+import { keccak256, toUtf8Bytes } from 'ethers'; // ✅ ethers v6+ import
 
 const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:8000';
 
@@ -15,8 +15,8 @@ export async function POST(request: Request) {
       );
     }
 
-    const promptBytes = ethers.utils.toUtf8Bytes(prompt);
-    const promptHash = ethers.utils.keccak256(promptBytes);
+    const promptBytes = toUtf8Bytes(prompt);
+    const promptHash = keccak256(promptBytes);
 
     const backendResponse = await axios.post(`${BACKEND_URL}/verify`, {
       prompt,
