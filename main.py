@@ -6,6 +6,7 @@ from typing import Optional
 from contextlib import contextmanager
 
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, confloat
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
@@ -57,12 +58,21 @@ app = FastAPI(
     redoc_url="/redoc"
 )
 
+# ✅ Add CORS middleware here
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],  # Frontend URL
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 # Rate limiter setup
 limiter = Limiter(key_func=get_remote_address)
 app.state.limiter = limiter
 app.add_middleware(SlowAPIMiddleware)
 
-# Database initialization
+# Initialize DB
 def init_db():
     with engine.begin() as conn:
         conn.execute(text('''
@@ -83,7 +93,7 @@ def init_db():
 
 init_db()
 
-# Pydantic models
+# Models
 class PromptRequest(BaseModel):
     prompt: str = Field(..., min_length=3, max_length=2000)
     model: str = Field("gpt-4o", pattern="^(gpt-4o|gpt-3.5-turbo|claude-3)$")
