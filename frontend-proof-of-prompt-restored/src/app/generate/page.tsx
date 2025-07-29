@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { ClipboardDocumentIcon } from '@heroicons/react/24/outline'
 
 interface ProofResponse {
   prompt: string
@@ -19,6 +20,7 @@ export default function GeneratePage() {
   const [proof, setProof] = useState<ProofResponse | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [copied, setCopied] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -47,6 +49,18 @@ export default function GeneratePage() {
     }
   }
 
+  const copyToClipboard = () => {
+    if (proof) {
+      const json = JSON.stringify(proof, null, 2)
+      navigator.clipboard.writeText(json)
+        .then(() => {
+          setCopied(true)
+          setTimeout(() => setCopied(false), 1500)
+        })
+        .catch(() => alert('Failed to copy'))
+    }
+  }
+
   return (
     <div className="max-w-2xl mx-auto px-4 py-8">
       <h1 className="text-2xl font-bold mb-4">✍️ Generate AI Proof</h1>
@@ -61,7 +75,7 @@ export default function GeneratePage() {
         />
         <button
           type="submit"
-          className="bg-blue-600 text-white px-4 py-2 rounded disabled:opacity-50"
+          className="bg-blue-600 text-white px-4 py-2 rounded disabled:opacity-50 mt-2"
           disabled={isLoading}
         >
           {isLoading ? 'Generating...' : 'Generate & Anchor'}
@@ -72,7 +86,16 @@ export default function GeneratePage() {
 
       {proof && (
         <div className="mt-6 p-4 bg-gray-900 text-white rounded shadow">
-          <h2 className="text-lg font-bold text-green-400 mb-2">✅ Prompt Verified</h2>
+          <div className="flex justify-between items-start mb-2">
+            <h2 className="text-lg font-bold text-green-400">✅ Prompt Verified</h2>
+            <button
+              onClick={copyToClipboard}
+              className="flex items-center gap-2 text-sm bg-blue-700 hover:bg-blue-800 text-white px-3 py-1 rounded"
+            >
+              <ClipboardDocumentIcon className="h-5 w-5" />
+              {copied ? 'Copied!' : 'Copy All'}
+            </button>
+          </div>
           <p><strong>Prompt:</strong> {proof.prompt}</p>
           <p><strong>Response:</strong> {proof.response}</p>
           <p><strong>Hash:</strong> <code>{proof.local_hash}</code></p>
