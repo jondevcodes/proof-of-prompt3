@@ -22,5 +22,5 @@ uvicorn[standard]==0.35.0
 SQLAlchemy
 slowapi==0.1.6
 web3==6.18.0
-
+tenacity==8.3.0  # Latest stable version
 
