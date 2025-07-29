@@ -43,6 +43,26 @@ Prove authorship, verify integrity, and establish audit trails for AI-generated 
 * **Security**: ECDSA, optional zkSNARKs  
 
 ---
+🛠️ Built & Maintained By
+This project was created and maintained by @jondevcodes, who designed and implemented:
+
+🔧 Full backend API using FastAPI for prompt submission, hashing, and storage
+
+🧠 A complete hashing engine using SHA-256 and BLAKE3
+
+⛓️ Testnet smart contract deployment via Remix (Solidity v0.8.25)
+
+🌐 RESTful routes for AI prompt/response verification
+
+🧪 Live test output now verified on Ethereum Sepolia
+
+📊 Swagger docs and working API endpoint for public testing
+
+📁 Modular architecture for adding frontend (WIP)
+
+💡 Built in just 6 days, publicly logged as part of a daily coding challenge documented on X, YouTube, and GitHub
+
+---
 
 ## 💻 Getting Started
 
