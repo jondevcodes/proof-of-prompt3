@@ -1,4 +1,4 @@
-import { ethers } from 'ethers';
+import { sha256, toUtf8Bytes } from "ethers";
 
 /**
  * Normalizes and hashes prompt+response content
@@ -18,5 +18,6 @@ export function hashContent(prompt: string, response: string): string {
   });
   
   // Generate SHA-256 hash
-  return ethers.utils.sha256(ethers.utils.toUtf8Bytes(payload));
+  return sha256(toUtf8Bytes(payload));
+
 }
