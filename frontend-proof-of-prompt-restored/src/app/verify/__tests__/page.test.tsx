@@ -1,6 +1,6 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { MockedProvider } from '@apollo/client/testing';
-import VerifyPage from '../page';
+import VerifyPage from '../pagetest';
 import { verifyProof } from '@/utils/api';
 
 jest.mock('@/utils/api', () => ({
