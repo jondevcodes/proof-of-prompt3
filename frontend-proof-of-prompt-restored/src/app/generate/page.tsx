@@ -2,6 +2,8 @@
 
 import { useState } from 'react'
 import { ClipboardDocumentIcon } from '@heroicons/react/24/outline'
+import { useConnect } from 'wagmi'
+import { metaMask } from 'wagmi/connectors'
 
 interface ProofResponse {
   prompt: string
@@ -22,6 +24,8 @@ export default function GeneratePage() {
   const [error, setError] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
 
+  const { connect } = useConnect()
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
@@ -29,7 +33,7 @@ export default function GeneratePage() {
     setError(null)
 
     try {
-      const res = await fetch('http://localhost:8000/prompt', {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/prompt`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -64,6 +68,14 @@ export default function GeneratePage() {
   return (
     <div className="max-w-2xl mx-auto px-4 py-8">
       <h1 className="text-2xl font-bold mb-4">✍️ Generate AI Proof</h1>
+
+      <button
+        onClick={() => connect({ connector: metaMask() })}
+        className="mb-4 bg-black text-white px-4 py-2 rounded hover:bg-gray-800 transition"
+      >
+        Connect MetaMask
+      </button>
+
       <form onSubmit={handleSubmit}>
         <textarea
           className="w-full bg-[#111] text-white border border-gray-700 focus:border-blue-500 focus:outline-none p-3 rounded placeholder-gray-400"
