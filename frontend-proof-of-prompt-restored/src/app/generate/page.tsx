@@ -59,30 +59,22 @@ export default function GeneratePage() {
     setError(null);
 
     try {
-      // Safely get environment variable
-      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
-      if (!baseUrl) throw new Error('API base URL is not defined');
-
-      const res = await fetch(`${baseUrl}/prompt`, {
+      // Call the backend API route
+      const res = await fetch('/api/generate-proof', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          prompt,
-          model: 'gpt-4o',
-          temperature: 0.7,
-          wallet_address: address,
-        }),
+        body: JSON.stringify({ prompt, walletAddress: address }),
       });
 
       if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.detail || `Server error: ${res.status}`);
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Failed to generate proof');
       }
 
       const data = await res.json();
       setProof(data);
     } catch (err: any) {
-      setError(err?.message || 'Failed to process your request');
+      setError(err.message || 'Failed to process your request');
       console.error('Submission error:', err);
     } finally {
       setIsLoading(false);
