@@ -1,27 +1,34 @@
-# Fly and build config
-fly.toml
-
-# Python cache and venv
+# Ignore Python junk
 __pycache__/
 *.pyc
-.venv/
-
-# Logs and local db
-*.log
-debug.log
-logs/
+*.pyo
+*.pyd
 *.db
 
-# Node.js frontend junk (if monorepo)
-node_modules/
-.next/
+# Ignore venv and env
+.venv/
+env/
+venv/
 
-# Env + local secrets
+# Ignore local env files
 .env
-.env.local
+.env.*
 
-# macOS system files
-.DS_Store
+# Ignore frontend folder (if present in same repo)
+frontend/
+frontend-proof-of-prompt-restored/
+node_modules/
 
-# Git repo
+# Git
 .git/
+.gitignore
+
+# Fly config (already in repo, no need at build)
+fly.toml
+
+# Other tools
+.dockerignore
+.DS_Store
+*.log
+*.sqlite3
+*.sqlite
