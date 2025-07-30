@@ -30,14 +30,13 @@ logger = logging.getLogger("ProofOfPromptAPI")
 # Load environment variables
 load_dotenv()
 
-# Validate critical env vars
 required_env_vars = ['OPENAI_API_KEY', 'CONTRACT_ADDRESS', 'WEB3_PROVIDER_URL']
 missing_vars = [v for v in required_env_vars if not os.getenv(v)]
 if missing_vars:
     logger.critical(f"Missing environment variables: {missing_vars}")
     raise RuntimeError(f"Missing critical environment variables: {missing_vars}")
 
-# Database setup
+# DB setup
 DATABASE_URL = "sqlite:///proofs.db"
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -58,21 +57,18 @@ app = FastAPI(
     redoc_url="/redoc"
 )
 
-# ✅ Add CORS middleware here
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # Frontend URL
+    allow_origins=["http://localhost:3000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Rate limiter setup
 limiter = Limiter(key_func=get_remote_address)
 app.state.limiter = limiter
 app.add_middleware(SlowAPIMiddleware)
 
-# Initialize DB
 def init_db():
     with engine.begin() as conn:
         conn.execute(text('''
@@ -93,7 +89,7 @@ def init_db():
 
 init_db()
 
-# Models
+# MODELS
 class PromptRequest(BaseModel):
     prompt: str = Field(..., min_length=3, max_length=2000)
     model: str = Field("gpt-4o", pattern="^(gpt-4o|gpt-3.5-turbo|claude-3)$")
@@ -109,6 +105,20 @@ class ProofResponse(BaseModel):
     local_hash: str
     timestamp: str
     blockchain: dict
+
+# ROUTES
+@app.get("/")
+def read_root():
+    return {
+        "status": "active",
+        "service": "proof-of-prompt",
+        "version": "1.0.0",
+        "endpoints": {
+            "docs": "/docs",
+            "prompt": "/prompt",
+            "verify": "/verify"
+        }
+    }
 
 @app.post("/prompt", response_model=ProofResponse)
 @limiter.limit("20/minute")
@@ -244,4 +254,3 @@ async def debug_check_connections():
         logger.error(f"Blockchain check failed: {e}")
 
     return checks
-
