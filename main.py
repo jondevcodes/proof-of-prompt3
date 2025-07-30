@@ -244,3 +244,7 @@ async def debug_check_connections():
         logger.error(f"Blockchain check failed: {e}")
 
     return checks
+
+@app.post("/generate", response_model=ProofResponse)
+async def generate_alias(request_data: PromptRequest, request: Request):
+    return await create_proof(request_data, request)
