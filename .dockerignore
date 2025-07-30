@@ -1,0 +1,27 @@
+# Fly and build config
+fly.toml
+
+# Python cache and venv
+__pycache__/
+*.pyc
+.venv/
+
+# Logs and local db
+*.log
+debug.log
+logs/
+*.db
+
+# Node.js frontend junk (if monorepo)
+node_modules/
+.next/
+
+# Env + local secrets
+.env
+.env.local
+
+# macOS system files
+.DS_Store
+
+# Git repo
+.git/
