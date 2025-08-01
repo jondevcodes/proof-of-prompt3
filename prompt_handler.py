@@ -13,6 +13,11 @@ logger = logging.getLogger("PromptHandler")
 
 # Load env
 load_dotenv()
+
+# Validate critical env vars
+if not os.getenv("OPENAI_API_KEY"):
+    raise EnvironmentError("Missing OPENAI_API_KEY in environment variables")
+
 client = OpenAI(timeout=15.0, max_retries=3)
 
 @retry(
@@ -56,16 +61,15 @@ def generate_proof(
         proof_data = f"{prompt}{response_content}".encode('utf-8')
         proof_hash = hashlib.sha256(proof_data).digest()
 
+        # Enhanced logging
         logger.info(f"Generated proof for {model} (prompt_len={len(prompt)}, response_len={len(response_content)})")
+        logger.info(f"Prompt: {prompt[:50]}...")  # Log the first 50 characters of the prompt
+        logger.info(f"Response: {response_content[:50]}...")  # Log the first 50 characters of the response
+        logger.info(f"Proof hash: {proof_hash.hex()}")  # Log the proof hash in hexadecimal
+
         return response_content, proof_hash
 
-    except APIConnectionError as e:
-        logger.error(f"OpenAI connection failed: {e}")
-        raise RuntimeError("AI service unavailable") from e
-    except RateLimitError as e:
-        logger.warning("OpenAI rate limit exceeded")
-        raise RuntimeError("Service temporarily overloaded") from e
-    except OpenAIError as e:
+    except (APIConnectionError, RateLimitError, OpenAIError) as e:
         logger.error(f"OpenAI error: {e}")
         raise RuntimeError(f"AI processing failed: {str(e)}") from e
     except Exception as e:

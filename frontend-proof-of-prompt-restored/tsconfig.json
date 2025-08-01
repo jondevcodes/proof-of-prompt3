@@ -1,37 +1,39 @@
 {
   "compilerOptions": {
-    "target": "ES2017",
-    "lib": ["dom", "dom.iterable", "esnext"],
-    "allowJs": true,
-    "skipLibCheck": true,
-    "strict": true,
-    "noEmit": true,
-    "esModuleInterop": true,
-    "module": "esnext",
-    "moduleResolution": "bundler",
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "jsx": "preserve",
-    "incremental": true,
-    "baseUrl": ".",
+    "target": "ES2017", // Specifies the JavaScript version to compile to
+    "lib": ["dom", "dom.iterable", "esnext"], // Includes DOM and ESNext features
+    "allowJs": true, // Allows JavaScript files in the project
+    "skipLibCheck": true, // Skips type checking of declaration files for faster builds
+    "strict": true, // Enables all strict type-checking options
+    "noEmit": true, // Prevents emitting compiled JavaScript files
+    "esModuleInterop": true, // Ensures compatibility with CommonJS modules
+    "module": "esnext", // Specifies the module system
+    "moduleResolution": "bundler", // Optimized for bundlers like Webpack or Vite
+    "resolveJsonModule": true, // Allows importing JSON files as modules
+    "isolatedModules": true, // Ensures each file is treated as a separate module
+    "jsx": "preserve", // Keeps JSX syntax for Next.js to handle
+    "incremental": true, // Enables incremental compilation for faster builds
+    "baseUrl": ".", // Sets the base directory for module resolution
     "plugins": [
       {
-        "name": "next"
+        "name": "next" // Adds Next.js-specific TypeScript support
       }
     ],
     "paths": {
-      "@/*": ["./src/*"],
-      "@/components/*": ["./src/components/*"],
-      "@/hooks/*": ["./src/hooks/*"],
-      "@/utils/*": ["./src/utils/*"],
-      "@/types/*": ["./src/types/*"]
+      "@/*": ["./src/*"], // Alias for the src directory
+      "@/components/*": ["./src/components/*"], // Alias for components
+      "@/hooks/*": ["./src/hooks/*"], // Alias for hooks
+      "@/utils/*": ["./src/utils/*"], // Alias for utilities
+      "@/types/*": ["./src/types/*"] // Alias for types
     }
   },
   "include": [
-    "next-env.d.ts",
-    "**/*.ts",
-    "**/*.tsx",
-    ".next/types/**/*.ts"
+    "next-env.d.ts", // Includes Next.js environment types
+    "**/*.ts", // Includes all TypeScript files
+    "**/*.tsx", // Includes all TypeScript React files
+    ".next/types/**/*.ts" // Includes Next.js type definitions
   ],
-  "exclude": ["node_modules"]
+  "exclude": [
+    "node_modules" // Excludes node_modules from type checking
+  ]
 }

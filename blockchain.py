@@ -13,7 +13,7 @@ def init_blockchain():
     load_dotenv()
     
     # Validate critical env vars
-    required_vars = ['WEB3_PROVIDER_URL', 'CONTRACT_ADDRESS']
+    required_vars = ['WEB3_PROVIDER_URL', 'CONTRACT_ADDRESS', 'PRIVATE_KEY']
     missing = [var for var in required_vars if not os.getenv(var)]
     if missing:
         logger.error(f"Missing env vars: {', '.join(missing)}")
@@ -89,13 +89,17 @@ def anchor_prompt_hash(prompt_hash: bytes):
             'chainId': w3.eth.chain_id,
             'nonce': w3.eth.get_transaction_count(account.address),
             'gas': 150000,
-            'maxFeePerGas': w3.to_wei('25', 'gwei'),
-            'maxPriorityFeePerGas': w3.to_wei('2', 'gwei'),
+            'maxFeePerGas': w3.to_wei(os.getenv('MAX_FEE_PER_GAS', '25'), 'gwei'),
+            'maxPriorityFeePerGas': w3.to_wei(os.getenv('MAX_PRIORITY_FEE_PER_GAS', '2'), 'gwei'),
         })
         
         signed_tx = account.sign_transaction(tx)
         tx_hash = w3.eth.send_raw_transaction(signed_tx.raw_transaction)
         receipt = w3.eth.wait_for_transaction_receipt(tx_hash, timeout=120)
+        
+        logger.info(f"Transaction hash: {tx_hash.hex()}")
+        logger.info(f"Gas used: {receipt.gasUsed}")
+        logger.info(f"Block number: {receipt.blockNumber}")
         
         return {
             "status": "confirmed" if receipt.status == 1 else "failed",
@@ -121,6 +125,7 @@ def verify_on_chain(prompt_hash: bytes):
         contract = get_contract(w3)
         
         exists, timestamp = contract.functions.verifyHash(prompt_hash).call()
+        logger.info(f"Verification result: exists={exists}, timestamp={timestamp}")
         return {
             "exists": exists,
             "timestamp": timestamp
