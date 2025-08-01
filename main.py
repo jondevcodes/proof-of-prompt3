@@ -61,7 +61,7 @@ app = FastAPI(
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # Frontend URL
+    allow_origins=["*"],  # Allow all for development
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -93,6 +93,14 @@ def init_db():
 
 init_db()
 
+# Initialize blockchain
+try:
+    w3, contract = init_blockchain()
+    logger.info("Blockchain initialized successfully")
+except Exception as e:
+    logger.error(f"Blockchain initialization failed: {str(e)}")
+    w3, contract = None, None
+
 # Models
 class PromptRequest(BaseModel):
     prompt: str = Field(..., min_length=3, max_length=2000)
@@ -110,6 +118,21 @@ class ProofResponse(BaseModel):
     timestamp: str
     blockchain: dict
 
+# Add root endpoint
+@app.get("/")
+async def root():
+    return {
+        "status": "running",
+        "service": "Proof-of-Prompt API",
+        "version": "1.0",
+        "endpoints": {
+            "docs": "/docs",
+            "generate": "/prompt (POST)",
+            "verify": "/verify (POST)",
+            "health": "/health"
+        }
+    }
+
 @app.post("/prompt", response_model=ProofResponse)
 @limiter.limit("20/minute")
 async def create_proof(request_data: PromptRequest, request: Request):
@@ -119,9 +142,15 @@ async def create_proof(request_data: PromptRequest, request: Request):
             model=request_data.model,
             temperature=request_data.temperature
         )
+    except (APIConnectionError, RateLimitError, APIError) as e:
+        logger.error(f"OpenAI API error: {str(e)}")
+        raise HTTPException(500, detail=f"AI service error: {str(e)}")
     except RuntimeError as e:
-        logger.error(f"Failed to get AI response: {e}")
-        raise HTTPException(500, detail="Failed to get AI response")
+        logger.error(f"Proof generation failed: {str(e)}")
+        raise HTTPException(500, detail="Failed to generate proof")
+    except Exception as e:
+        logger.exception("Unexpected error during proof generation")
+        raise HTTPException(500, detail="Internal server error")
 
     hex_hash = proof_hash.hex()
     timestamp = datetime.utcnow().isoformat()
@@ -135,25 +164,39 @@ async def create_proof(request_data: PromptRequest, request: Request):
             db.commit()
     except Exception as e:
         logger.error(f"Database insert failed: {str(e)}")
-        raise HTTPException(503, "Database operation failed")
+        # Don't fail the request if DB fails, continue with blockchain
 
+    blockchain_result = {"status": "pending"}
     try:
-        blockchain_result = anchor_prompt_hash(proof_hash)
+        if w3 and contract:
+            tx_receipt = anchor_prompt_hash(proof_hash, w3, contract)
+            blockchain_result = {
+                "status": "confirmed",
+                "tx_hash": tx_receipt.transactionHash.hex(),
+                "block_number": tx_receipt.blockNumber,
+                "gas_used": tx_receipt.gasUsed,
+                "explorer_url": f"https://sepolia.etherscan.io/tx/{tx_receipt.transactionHash.hex()}"
+            }
+            
+            # Update DB with blockchain tx if available
+            try:
+                with get_db() as db:
+                    db.execute(
+                        text("UPDATE prompts SET blockchain_tx = :tx WHERE local_hash = :h"),
+                        {"tx": tx_receipt.transactionHash.hex(), "h": hex_hash}
+                    )
+                    db.commit()
+            except Exception as e:
+                logger.error(f"Failed to update blockchain_tx: {str(e)}")
+        else:
+            logger.warning("Blockchain not initialized, skipping anchoring")
+            blockchain_result = {"status": "blockchain_disabled"}
     except Exception as e:
-        logger.warning(f"Blockchain anchoring failed, continuing locally: {str(e)}")
-        blockchain_result = {"status": "local_only"}
-
-    if "tx_hash" in blockchain_result:
-        try:
-            with get_db() as db:
-                db.execute(
-                    text("UPDATE prompts SET blockchain_tx = :tx WHERE local_hash = :h"),
-                    {"tx": blockchain_result["tx_hash"], "h": hex_hash}
-                )
-                db.commit()
-            blockchain_result["explorer_url"] = f"https://sepolia.etherscan.io/tx/{blockchain_result['tx_hash']}"
-        except Exception as e:
-            logger.error(f"Failed to update blockchain_tx: {str(e)}")
+        logger.warning(f"Blockchain anchoring failed: {str(e)}")
+        blockchain_result = {
+            "status": "failed",
+            "error": str(e)
+        }
 
     return {
         "prompt": request_data.prompt,
@@ -169,6 +212,7 @@ async def verify_proof(request_data: VerificationRequest, request: Request):
     proof_hash = hashlib.sha256(f"{request_data.prompt}{request_data.response}".encode()).digest()
     hex_hash = proof_hash.hex()
 
+    record = None
     try:
         with get_db() as db:
             record = db.execute(
@@ -177,13 +221,15 @@ async def verify_proof(request_data: VerificationRequest, request: Request):
             ).fetchone()
     except Exception as e:
         logger.error(f"Database query failed: {str(e)}")
-        raise HTTPException(503, "Database operation failed")
 
+    on_chain = {"exists": False}
     try:
-        on_chain = verify_on_chain(proof_hash)
+        if w3 and contract:
+            on_chain = verify_on_chain(proof_hash, contract)
+        else:
+            logger.warning("Blockchain not initialized, skipping verification")
     except Exception as e:
         logger.warning(f"Blockchain verification failed: {str(e)}")
-        on_chain = {"exists": False}
 
     return {
         "on_chain": on_chain,
@@ -217,7 +263,20 @@ async def get_proof(tx_hash: str, request: Request):
 
 @app.get("/health")
 async def health():
-    return {"status": "ok", "services": ["db", "blockchain", "ai"]}
+    status = {
+        "status": "ok",
+        "services": {
+            "database": "ok",
+            "blockchain": "ok" if w3 and contract else "disabled",
+            "ai": "ok"
+        }
+    }
+    
+    # Add detailed checks if needed
+    if not w3 or not contract:
+        status["services"]["blockchain"] = "disabled - check contract/connection"
+    
+    return status
 
 @app.get("/debug/check_connections")
 async def debug_check_connections():
@@ -238,8 +297,10 @@ async def debug_check_connections():
         logger.error(f"Database check failed: {e}")
 
     try:
-        w3, _ = init_blockchain()
-        checks["blockchain"] = w3.is_connected()
+        if w3 and contract:
+            checks["blockchain"] = w3.is_connected()
+        else:
+            checks["blockchain"] = "not_initialized"
     except Exception as e:
         logger.error(f"Blockchain check failed: {e}")
 
