@@ -1,18 +1,29 @@
-FROM python:3.13.5 AS builder
+# Dockerfile (optimized for FastAPI + Web3)
+FROM python:3.11-slim
 
-ENV PYTHONUNBUFFERED=1 \
-    PYTHONDONTWRITEBYTECODE=1
 WORKDIR /app
 
-RUN python -m venv .venv
-COPY requirements.txt ./
-RUN .venv/bin/pip install -r requirements.txt
+# Install system dependencies for Web3/crypto
+RUN apt-get update && apt-get install -y \
+    gcc \
+    python3-dev \
+    && rm -rf /var/lib/apt/lists/*
 
-FROM python:3.13.5-slim
-WORKDIR /app
+# Install Python dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-COPY --from=builder /app/.venv .venv/
+# Copy application
 COPY . .
 
-EXPOSE 8000
-CMD ["/app/.venv/bin/uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Create persistent data directory for SQLite
+RUN mkdir -p /data
+
+# Set production-ready defaults
+ENV PORT=8080
+ENV DATABASE_URL=sqlite:////data/proofs.db
+ENV PYTHONUNBUFFERED=1
+ENV ENVIRONMENT=production
+
+# Run with gunicorn for production
+CMD ["gunicorn", "main:app", "--workers", "2", "--worker-class", "uvicorn.workers.UvicornWorker", "--bind", "0.0.0.0:8080", "--timeout", "120"]

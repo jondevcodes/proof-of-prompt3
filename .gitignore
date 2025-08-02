@@ -1,6 +1,7 @@
 # Secrets and environments
 .env
 venv/
+.env.prod
 
 # Python cache and compiled files
 __pycache__/
