@@ -1,6 +1,9 @@
 # 🧠 Proof-of-Prompt  
+
 Product Video
+
 https://github.com/user-attachments/assets/2e2f603a-7c19-484c-aeb6-74750ec6ec4e
+
 > *The first cryptographic notary for AI prompts and outputs—anchored to blockchain for tamper-proof verification.*
 
 > **Solving the trust crisis in AI.**  
