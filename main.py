@@ -194,12 +194,17 @@ async def create_proof(request_data: PromptRequest, request: Request):
             
             # Verify the transaction was successful
             if tx_receipt and tx_receipt.status == 1:
+                tx_hash_hex = tx_receipt.transactionHash.hex()
+                # Ensure the hash has 0x prefix for Etherscan
+                if not tx_hash_hex.startswith('0x'):
+                    tx_hash_hex = f"0x{tx_hash_hex}"
+                
                 blockchain_result = {
                     "status": "confirmed",
-                    "tx_hash": tx_receipt.transactionHash.hex(),
+                    "tx_hash": tx_hash_hex,
                     "block_number": tx_receipt.blockNumber,
                     "gas_used": tx_receipt.gasUsed,
-                    "explorer_url": f"https://sepolia.etherscan.io/tx/{tx_receipt.transactionHash.hex()}"
+                    "explorer_url": f"https://sepolia.etherscan.io/tx/{tx_hash_hex}"
                 }
                 
                 try:
