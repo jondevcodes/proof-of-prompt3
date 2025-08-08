@@ -68,7 +68,16 @@ app = FastAPI(
 # Add CORS middleware with proper configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=os.environ.get("ALLOWED_ORIGINS", "http://localhost:3000").split(","),
+    allow_origins=[
+        "http://localhost:3000",
+        "https://frontend-proof-of-prompt-restored-3i7u75dcx.vercel.app",
+        "https://frontend-proof-of-prompt-restored-88sayy96i.vercel.app",
+        "https://frontend-proof-of-prompt-restored-5yhr41vg8.vercel.app",
+        "https://frontend-proof-of-prompt-restored-94lz8lgw3.vercel.app",
+        "https://frontend-proof-of-prompt-restored-6ahfpijhg.vercel.app",
+        "https://frontend-proof-of-prompt-restored-1ooa0o73p.vercel.app",
+        "https://frontend-proof-of-prompt-restored-6ahfpijhg.vercel.app"
+    ],
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE"],
     allow_headers=["*"],
