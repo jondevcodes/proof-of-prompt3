@@ -191,23 +191,32 @@ async def create_proof(request_data: PromptRequest, request: Request):
     try:
         if w3 and contract:
             tx_receipt = anchor_prompt_hash(proof_hash, w3, contract)
-            blockchain_result = {
-                "status": "confirmed",
-                "tx_hash": tx_receipt.transactionHash.hex(),
-                "block_number": tx_receipt.blockNumber,
-                "gas_used": tx_receipt.gasUsed,
-                "explorer_url": f"https://sepolia.etherscan.io/tx/{tx_receipt.transactionHash.hex()}"
-            }
             
-            try:
-                with get_db() as db:
-                    db.execute(
-                        text("UPDATE prompts SET blockchain_tx = :tx WHERE local_hash = :h"),
-                        {"tx": tx_receipt.transactionHash.hex(), "h": hex_hash}
-                    )
-                    db.commit()
-            except Exception as e:
-                logger.error(f"Failed to update blockchain_tx: {str(e)}")
+            # Verify the transaction was successful
+            if tx_receipt and tx_receipt.status == 1:
+                blockchain_result = {
+                    "status": "confirmed",
+                    "tx_hash": tx_receipt.transactionHash.hex(),
+                    "block_number": tx_receipt.blockNumber,
+                    "gas_used": tx_receipt.gasUsed,
+                    "explorer_url": f"https://sepolia.etherscan.io/tx/{tx_receipt.transactionHash.hex()}"
+                }
+                
+                try:
+                    with get_db() as db:
+                        db.execute(
+                            text("UPDATE prompts SET blockchain_tx = :tx WHERE local_hash = :h"),
+                            {"tx": tx_receipt.transactionHash.hex(), "h": hex_hash}
+                        )
+                        db.commit()
+                except Exception as e:
+                    logger.error(f"Failed to update blockchain_tx: {str(e)}")
+            else:
+                logger.error("Transaction failed on blockchain")
+                blockchain_result = {
+                    "status": "failed",
+                    "error": "Transaction failed on blockchain"
+                }
         else:
             logger.warning("Blockchain not initialized, skipping anchoring")
             blockchain_result = {"status": "blockchain_disabled"}
