@@ -164,14 +164,32 @@ def anchor_prompt_hash(prompt_hash: bytes, w3: Web3Instance, contract) -> Dict[s
         signed_tx = account.sign_transaction(tx)
         tx_hash = w3.eth.send_raw_transaction(signed_tx.raw_transaction)
         
+        logger.info(f"Transaction sent: {tx_hash.hex()}")
+        
         # Wait for receipt with timeout
-        receipt = w3.eth.wait_for_transaction_receipt(tx_hash, timeout=300, poll_latency=5)
-        
-        if receipt.status != 1:
-            raise ValueError(f"Transaction reverted: {tx_hash.hex()}")
-        
-        logger.info(f"✅ Anchored hash in block {receipt.blockNumber}")
-        return receipt
+        try:
+            receipt = w3.eth.wait_for_transaction_receipt(tx_hash, timeout=300, poll_latency=5)
+            logger.info(f"Transaction receipt received: {receipt}")
+            
+            if receipt.status != 1:
+                logger.error(f"Transaction failed with status {receipt.status}")
+                raise ValueError(f"Transaction reverted: {tx_hash.hex()}")
+            
+            logger.info(f"✅ Anchored hash in block {receipt.blockNumber}")
+            return receipt
+            
+        except Exception as e:
+            logger.error(f"Error waiting for transaction receipt: {str(e)}")
+            # Check if transaction exists on blockchain
+            try:
+                tx_info = w3.eth.get_transaction(tx_hash)
+                if tx_info:
+                    logger.error(f"Transaction exists but failed: {tx_info}")
+                else:
+                    logger.error("Transaction not found on blockchain")
+            except Exception as check_error:
+                logger.error(f"Could not check transaction status: {str(check_error)}")
+            raise
         
     except exceptions.ContractLogicError as e:
         error_msg = f"Contract error: {e}"
