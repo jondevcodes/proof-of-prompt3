@@ -1,27 +1,44 @@
 import { ClipboardDocumentIcon } from '@heroicons/react/24/outline';
+import { useState } from 'react';
 
-export default function HashDisplay({ hash }: { hash: string }) {
+interface HashDisplayProps {
+  hash: string;
+}
+
+export default function HashDisplay({ hash }: HashDisplayProps) {
+  const [copied, setCopied] = useState(false);
+
   const copyToClipboard = () => {
-    navigator.clipboard.writeText(hash);
+    navigator.clipboard.writeText(hash)
+      .then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1500);
+      })
+      .catch(() => {
+        // Fallback for older browsers
+        const textArea = document.createElement('textarea');
+        textArea.value = hash;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1500);
+      });
   };
 
   return (
-    <div className="group relative">
-      <div className="flex items-center justify-between bg-gray-50 p-3 rounded-md">
-        <code className="text-sm font-mono break-all">
-          {hash.substring(0, 16)}...{hash.substring(hash.length - 8)}
-        </code>
-        <button 
-          onClick={copyToClipboard}
-          className="ml-2 text-gray-400 hover:text-gray-600"
-          aria-label="Copy hash"
-        >
-          <ClipboardDocumentIcon className="h-4 w-4" />
-        </button>
-      </div>
-      <span className="absolute -top-2 left-3 bg-white px-1 text-xs text-gray-500 opacity-0 group-hover:opacity-100">
-        Content Hash
-      </span>
+    <div className="flex items-center gap-2">
+      <code className="text-sm bg-gray-900 p-2 rounded break-all text-gray-200 flex-1">
+        {hash}
+      </code>
+      <button
+        onClick={copyToClipboard}
+        className="flex items-center gap-1 text-sm bg-blue-700 hover:bg-blue-800 px-3 py-1.5 rounded transition"
+      >
+        <ClipboardDocumentIcon className="h-4 w-4" />
+        {copied ? 'Copied!' : 'Copy'}
+      </button>
     </div>
   );
 }

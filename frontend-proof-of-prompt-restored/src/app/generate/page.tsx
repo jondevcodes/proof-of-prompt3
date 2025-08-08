@@ -33,18 +33,7 @@ export default function GeneratePage() {
   const [hasMounted, setHasMounted] = useState(false);
 
   const { isConnected, address } = useAccount();
-  const { connect, status: connectStatus } = useConnect({
-    onError(error) {
-      let message = 'Failed to connect wallet.';
-      if (error.name === 'ConnectorNotFoundError') {
-        message = 'MetaMask extension not found!';
-      } else if (error.name === 'UserRejectedRequestError') {
-        message = 'Connection rejected by user.';
-      }
-      console.error('Connection error:', error);
-      setError(message);
-    }
-  });
+  const { connect, status: connectStatus } = useConnect();
 
   useEffect(() => {
     setHasMounted(true);
@@ -293,7 +282,7 @@ export default function GeneratePage() {
           ) : proof.blockchain?.status === 'failed' ? (
             <div className="mt-3 pt-3 border-t border-gray-700">
               <p className="text-red-400 flex items-center gap-2">
-                <span>❌</span> Blockchain anchoring failed: {proof.blockchain.error || 'Unknown error'}
+                <span>❌</span> Blockchain anchoring failed: {(proof.blockchain as any).error || 'Unknown error'}
               </p>
             </div>
           ) : (

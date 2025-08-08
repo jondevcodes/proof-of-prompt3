@@ -1,4 +1,4 @@
-import { hashContent } from '../proof';
+import { hashContent } from '@/utils/proof';
 
 describe('hashContent', () => {
   it('generates deterministic hashes', () => {

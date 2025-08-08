@@ -65,12 +65,12 @@ app = FastAPI(
     redoc_url="/redoc"
 )
 
-# Add CORS middleware
+# Add CORS middleware with proper configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all for now
+    allow_origins=os.environ.get("ALLOWED_ORIGINS", "http://localhost:3000").split(","),
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE"],
     allow_headers=["*"],
 )
 
@@ -217,7 +217,53 @@ async def create_proof(request_data: PromptRequest, request: Request):
         "blockchain": blockchain_result
     }
 
-# ... (other endpoints remain the same as your original version) ...
+# Add missing /verify endpoint
+@app.post("/verify", response_model=dict)
+@limiter.limit("30/minute")
+async def verify_proof(request_data: VerificationRequest, request: Request):
+    try:
+        # Generate hash from prompt + response
+        proof_data = f"{request_data.prompt}{request_data.response}".encode('utf-8')
+        proof_hash = hashlib.sha256(proof_data).digest()
+        
+        # Verify on blockchain
+        verification_result = verify_on_chain(proof_hash)
+        
+        return {
+            "verified": verification_result.get("exists", False),
+            "hash": proof_hash.hex(),
+            "blockchain": verification_result
+        }
+    except Exception as e:
+        logger.error(f"Verification failed: {str(e)}")
+        raise HTTPException(500, detail="Verification failed")
+
+# Add missing /api/proofs/{txHash} endpoint
+@app.get("/api/proofs/{tx_hash}")
+async def get_proof_by_tx(tx_hash: str):
+    try:
+        with get_db() as db:
+            result = db.execute(
+                text("SELECT * FROM prompts WHERE blockchain_tx = :tx"),
+                {"tx": tx_hash}
+            ).fetchone()
+            
+            if not result:
+                raise HTTPException(404, detail="Proof not found")
+            
+            return {
+                "prompt": result.prompt,
+                "response": result.response,
+                "local_hash": result.local_hash,
+                "timestamp": result.timestamp,
+                "blockchain_tx": result.blockchain_tx,
+                "model": result.model
+            }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Database query failed: {str(e)}")
+        raise HTTPException(500, detail="Database error")
 
 # Health check endpoint with dependency checks
 @app.get("/health")

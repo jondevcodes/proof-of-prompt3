@@ -16,12 +16,12 @@ interface VerificationData {
 export default function VerificationResult({ data }: { data: VerificationData }) {
   if (data.error) {
     return (
-      <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-        <div className="flex items-center text-red-600">
+      <div className="mt-6 p-4 bg-red-900 border border-red-700 rounded-lg">
+        <div className="flex items-center text-red-300">
           <XCircleIcon className="h-5 w-5 mr-2" />
           <h3 className="font-medium">Verification Failed</h3>
         </div>
-        <p className="mt-2 text-sm">{data.error}</p>
+        <p className="mt-2 text-sm text-red-200">{data.error}</p>
       </div>
     );
   }
@@ -29,15 +29,15 @@ export default function VerificationResult({ data }: { data: VerificationData })
   return (
     <div className="mt-8 space-y-6">
       <div className={`p-4 rounded-lg border ${
-        data.verified ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'
+        data.verified ? 'bg-green-900 border-green-700' : 'bg-red-900 border-red-700'
       }`}>
         <div className="flex items-center gap-2">
           {data.verified ? (
-            <CheckCircleIcon className="h-5 w-5 text-green-600" />
+            <CheckCircleIcon className="h-5 w-5 text-green-400" />
           ) : (
-            <XCircleIcon className="h-5 w-5 text-red-600" />
+            <XCircleIcon className="h-5 w-5 text-red-400" />
           )}
-          <h3 className="font-medium">
+          <h3 className="font-medium text-white">
             {data.verified ? 'Verification Successful' : 'Proof Invalid'}
           </h3>
         </div>

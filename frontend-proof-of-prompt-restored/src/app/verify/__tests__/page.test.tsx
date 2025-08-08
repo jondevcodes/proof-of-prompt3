@@ -1,6 +1,5 @@
 import { render, screen, fireEvent } from '@testing-library/react';
-import { MockedProvider } from '@apollo/client/testing';
-import VerifyPage from '../pagetest';
+import VerifyPage from '../page';
 import { verifyProof } from '@/utils/api';
 
 jest.mock('@/utils/api', () => ({
@@ -25,9 +24,27 @@ describe('VerifyPage', () => {
       target: { value: 'Test response' }
     });
     
-    fireEvent.click(screen.getByText('Verify Authenticity'));
+    fireEvent.click(screen.getByText('Verify Proof'));
     
-    expect(await screen.findByText('Verification Result')).toBeInTheDocument();
+    expect(await screen.findByText('Proof Verified')).toBeInTheDocument();
     expect(screen.getByText(/0x123...abc/i)).toBeInTheDocument();
+  });
+
+  it('shows error when verification fails', async () => {
+    (verifyProof as jest.Mock).mockRejectedValue(new Error('Verification failed'));
+
+    render(<VerifyPage />);
+    
+    fireEvent.change(screen.getByLabelText('Original Prompt'), {
+      target: { value: 'Test prompt' }
+    });
+    
+    fireEvent.change(screen.getByLabelText('AI Response'), {
+      target: { value: 'Test response' }
+    });
+    
+    fireEvent.click(screen.getByText('Verify Proof'));
+    
+    expect(await screen.findByText('Verification failed')).toBeInTheDocument();
   });
 });

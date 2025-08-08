@@ -2,7 +2,6 @@ import os
 import json
 import logging
 from web3 import Web3, exceptions
-from web3.middleware import geth_poa_middleware
 from dotenv import load_dotenv
 from typing import Tuple, Optional, Dict, Any
 
@@ -17,11 +16,11 @@ logger = logging.getLogger("ProofAnchor")
 Web3Instance = Web3
 Account = Any  # Would use web3.eth.Account if not for circular import
 
-def init_blockchain() -> Tuple[Web3Instance, Optional[Account]]:
+def init_blockchain() -> Tuple[Web3Instance, Optional[Any]]:
     """
-    Secure blockchain initialization with enhanced error handling and POA support
+    Secure blockchain initialization with enhanced error handling
     Returns:
-        Tuple: (Web3 instance, Account object or None)
+        Tuple: (Web3 instance, Contract object or None)
     """
     load_dotenv()
     
@@ -39,20 +38,19 @@ def init_blockchain() -> Tuple[Web3Instance, Optional[Account]]:
         raise EnvironmentError(error_msg)
 
     try:
-        # Initialize Web3 with timeout and retry
+        # Initialize Web3 with timeout (removed retries for newer web3.py)
         w3 = Web3(Web3.HTTPProvider(
             os.getenv('WEB3_PROVIDER_URL'),
             request_kwargs={
                 'timeout': 30,  # Increased timeout for Railway
-                'retries': 3
             }
         ))
         
-        # Add POA middleware for networks like Sepolia
-        w3.middleware_onion.inject(geth_poa_middleware, layer=0)
-        
         if not w3.is_connected():
             raise ConnectionError("Web3 provider unreachable - check RPC URL")
+        
+        # Get contract instance
+        contract = get_contract(w3)
         
         # Secure account initialization with validation
         account = None
@@ -66,7 +64,7 @@ def init_blockchain() -> Tuple[Web3Instance, Optional[Account]]:
         
         chain_id = w3.eth.chain_id
         logger.info(f"✅ Connected to chain {chain_id} (Network ID: {chain_id})")
-        return w3, account
+        return w3, contract
         
     except ValueError as e:
         logger.error(f"Invalid private key format: {str(e)}")
@@ -125,14 +123,18 @@ def get_contract(w3: Web3Instance):
     
     return w3.eth.contract(address=contract_address, abi=abi)
 
-def anchor_prompt_hash(prompt_hash: bytes) -> Dict[str, Any]:
+def anchor_prompt_hash(prompt_hash: bytes, w3: Web3Instance, contract) -> Dict[str, Any]:
     """Secure hash anchoring with gas optimization"""
     try:
-        w3, account = init_blockchain()
-        if not account:
+        # Get account from environment
+        if 'PRIVATE_KEY' not in os.environ:
             raise ValueError("No signing account configured")
         
-        contract = get_contract(w3)
+        private_key = os.getenv('PRIVATE_KEY')
+        if not private_key.startswith('0x'):
+            private_key = '0x' + private_key
+        
+        account = w3.eth.account.from_key(private_key)
         
         # Gas estimation with fallback
         try:
@@ -156,11 +158,11 @@ def anchor_prompt_hash(prompt_hash: bytes) -> Dict[str, Any]:
             'maxFeePerGas': max_fee,
             'maxPriorityFeePerGas': max_priority,
             'to': contract.address,
-            'data': contract.encodeABI(fn_name='anchorHash', args=[prompt_hash])
+            'data': contract.functions.anchorHash(prompt_hash).build_transaction()['data']
         }
         
         signed_tx = account.sign_transaction(tx)
-        tx_hash = w3.eth.send_raw_transaction(signed_tx.rawTransaction)
+        tx_hash = w3.eth.send_raw_transaction(signed_tx.raw_transaction)
         
         # Wait for receipt with timeout
         receipt = w3.eth.wait_for_transaction_receipt(tx_hash, timeout=300, poll_latency=5)
@@ -169,30 +171,23 @@ def anchor_prompt_hash(prompt_hash: bytes) -> Dict[str, Any]:
             raise ValueError(f"Transaction reverted: {tx_hash.hex()}")
         
         logger.info(f"✅ Anchored hash in block {receipt.blockNumber}")
-        return {
-            "status": "confirmed",
-            "tx_hash": tx_hash.hex(),
-            "block_number": receipt.blockNumber,
-            "gas_used": receipt.gasUsed,
-            "explorer_url": f"https://sepolia.etherscan.io/tx/{tx_hash.hex()}"
-        }
+        return receipt
         
     except exceptions.ContractLogicError as e:
         error_msg = f"Contract error: {e}"
         logger.error(error_msg)
-        return {"status": "failed", "error": error_msg}
+        raise ValueError(error_msg)
     except ValueError as e:
         logger.error(f"Transaction error: {e}")
-        return {"status": "failed", "error": str(e)}
+        raise
     except Exception as e:
         logger.exception("Blockchain anchoring failed")
-        return {"status": "failed", "error": "Internal server error"}
+        raise RuntimeError("Internal server error")
 
 def verify_on_chain(prompt_hash: bytes) -> Dict[str, Any]:
     """Robust hash verification with enhanced error handling"""
     try:
-        w3, _ = init_blockchain()
-        contract = get_contract(w3)
+        w3, contract = init_blockchain()
         
         # Call with timeout
         exists, timestamp = contract.functions.verifyHash(prompt_hash).call(
@@ -215,13 +210,11 @@ def verify_on_chain(prompt_hash: bytes) -> Dict[str, Any]:
 def test_blockchain_connection():
     """Test function for deployment verification"""
     try:
-        w3, acc = init_blockchain()
-        contract = get_contract(w3)
+        w3, contract = init_blockchain()
         
         return {
             "status": "connected",
             "chain_id": w3.eth.chain_id,
-            "account": acc.address if acc else None,
             "contract_code": bool(w3.eth.get_code(contract.address)),
             "latest_block": w3.eth.block_number
         }
@@ -240,9 +233,12 @@ if __name__ == "__main__":
     
     print("\n=== Anchoring Test ===")
     test_hash = hashlib.sha256(b"test").digest()
-    result = anchor_prompt_hash(test_hash)
-    pprint(result)
-    
-    if result.get("status") == "confirmed":
+    try:
+        w3, contract = init_blockchain()
+        result = anchor_prompt_hash(test_hash, w3, contract)
+        pprint(result)
+        
         print("\n=== Verification Test ===")
         pprint(verify_on_chain(test_hash))
+    except Exception as e:
+        print(f"Test failed: {e}")
