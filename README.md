@@ -1,5 +1,7 @@
 # 🧠 Proof-of-Prompt  
 > *The first cryptographic notary for AI prompts and outputs—anchored to blockchain for tamper-proof verification.*
+>
+> https://github.com/user-attachments/assets/55f332b0-7cff-4322-90ef-15ef7d1b8d01
 
 > **Solving the trust crisis in AI.**  
 Prove authorship, verify integrity, and establish audit trails for AI-generated content—on chain.
@@ -208,16 +210,6 @@ curl -X POST "https://your-backend.onrender.com/prompt" \
     "prompt": "Write a simple NDA",
     "model": "gpt-4o",
     "temperature": 0.7
-  }'
-```
-
-#### Verify Proof
-```bash
-curl -X POST "https://your-backend.onrender.com/verify" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "prompt": "Write a simple NDA",
-    "response": "Here is a simple NDA..."
   }'
 ```
 
